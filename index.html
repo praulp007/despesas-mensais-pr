@@ -6,151 +6,88 @@
 <title>Despesas Mensais</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --bg: #000000;
-    --surface: #111111;
-    --surface2: #1c1c1c;
-    --border: #2e2e2e;
-    --text: #f0f0f0;
-    --muted: #888888;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: Arial, Helvetica, sans-serif;
-    background: var(--bg);
-    color: var(--text);
+    background: #000;
+    color: #fff;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  /* LOGIN SCREEN */
-  #loginScreen {
-    background: #000;
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    margin: 0;
   }
   .login-box {
     background: #111;
     padding: 40px 30px;
-    border-radius: 20px;
+    border-radius: 16px;
     border: 1px solid #333;
     text-align: center;
     width: 100%;
-    max-width: 360px;
+    max-width: 380px;
   }
   h1 {
-    font-size: 2rem;
+    font-size: 2.2rem;
     margin-bottom: 8px;
   }
-  .subtitle {
+  p {
     color: #888;
-    margin-bottom: 32px;
+    margin-bottom: 30px;
   }
-  .pin-inputs {
-    display: flex;
-    gap: 14px;
-    justify-content: center;
-    margin-bottom: 32px;
-  }
-  .pin-inputs input {
-    width: 62px;
-    height: 72px;
-    text-align: center;
-    font-size: 2.2rem;
-    font-weight: bold;
+  input {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.3rem;
     background: #1a1a1a;
-    border: 2px solid #444;
-    border-radius: 12px;
+    border: 1px solid #444;
+    border-radius: 10px;
     color: white;
-  }
-  .pin-inputs input:focus {
-    border-color: #fff;
-    outline: none;
+    margin-bottom: 20px;
+    text-align: center;
   }
   button {
-    background: white;
-    color: black;
+    width: 100%;
+    padding: 16px;
+    background: #fff;
+    color: #000;
     border: none;
-    padding: 14px 48px;
-    border-radius: 12px;
+    border-radius: 10px;
     font-size: 1.1rem;
-    font-weight: 700;
+    font-weight: bold;
     cursor: pointer;
   }
-  button:hover {
-    background: #ddd;
-  }
-  #loginError {
-    color: #ff6666;
-    margin-top: 16px;
-    min-height: 24px;
-  }
+  button:hover { background: #ddd; }
+  #error { color: #ff6666; margin-top: 12px; }
 </style>
 </head>
 <body>
 
-<div id="loginScreen">
-  <div class="login-box">
-    <h1>Despesas Mensais</h1>
-    <p class="subtitle">Introduz o PIN para continuar</p>
-    
-    <div class="pin-inputs" id="pinInputs">
-      <input type="text" maxlength="1" class="pin-digit" inputmode="numeric" autofocus>
-      <input type="text" maxlength="1" class="pin-digit" inputmode="numeric">
-      <input type="text" maxlength="1" class="pin-digit" inputmode="numeric">
-      <input type="text" maxlength="1" class="pin-digit" inputmode="numeric">
-    </div>
-
-    <button onclick="verifyPIN()">Entrar</button>
-    <div id="loginError"></div>
-  </div>
+<div class="login-box">
+  <h1>Despesas Mensais</h1>
+  <p>Introduz o PIN para continuar</p>
+  
+  <input type="password" id="pinInput" placeholder="PIN de 4 dígitos" maxlength="4" autofocus>
+  
+  <button onclick="verifyPIN()">Entrar</button>
+  <div id="error"></div>
 </div>
 
 <script>
-const SUPABASE_URL = 'https://ohbbcsghkyhzfavvzkyz.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_KGEYS3WfYgdotlgwl5uhbw_UhU-d5Bf';
-
-let supabase;
-
-async function initSupabase() {
-  supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
-
 function verifyPIN() {
-  const digits = Array.from(document.querySelectorAll('.pin-digit')).map(i => i.value).join('');
-  if (digits === '1007') {
-    document.getElementById('loginScreen').style.display = 'none';
-    alert('Login efetuado com sucesso! 🎉\n\nAgora podes começar a adicionar despesas.');
-    // Aqui irás colocar o conteúdo principal da app
-    window.location.reload(); // recarrega para mostrar a app (temporário)
+  const pin = document.getElementById('pinInput').value.trim();
+  
+  if (pin === '1007') {
+    alert('✅ Login efetuado com sucesso!');
+    // Aqui vai aparecer a aplicação completa (vou adicionar na próxima mensagem)
+    document.body.innerHTML = `<h1 style="color:white;text-align:center;margin-top:100px;">Bem-vindo! 🎉<br><br>Aplicação em construção...</h1>`;
   } else {
-    document.getElementById('loginError').textContent = 'PIN incorreto. Tenta novamente: 1007';
+    document.getElementById('error').textContent = 'PIN incorreto. Tenta 1007';
   }
 }
 
-// Auto-focus no próximo campo
-document.addEventListener('DOMContentLoaded', () => {
-  const inputs = document.querySelectorAll('.pin-digit');
-  inputs.forEach((input, index) => {
-    input.addEventListener('input', () => {
-      if (input.value.length === 1 && index < 3) {
-        inputs[index + 1].focus();
-      }
-    });
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' && input.value === '' && index > 0) {
-        inputs[index - 1].focus();
-      }
-    });
-  });
+// Permite pressionar Enter
+document.getElementById('pinInput').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') verifyPIN();
 });
-
-initSupabase();
 </script>
 </body>
 </html>
