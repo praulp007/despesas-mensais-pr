@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Despesas Mensais</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   body {
     font-family: Arial, Helvetica, sans-serif;
@@ -12,74 +11,64 @@
     color: #fff;
     margin: 0;
     padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .login-box {
-    max-width: 380px;
-    margin: 80px auto;
+  .box {
     background: #111;
-    padding: 40px 30px;
+    padding: 50px 40px;
     border-radius: 20px;
     text-align: center;
+    max-width: 400px;
     border: 1px solid #333;
   }
-  h1 { font-size: 2.3rem; margin-bottom: 8px; }
-  p { color: #888; margin-bottom: 30px; }
+  h1 { font-size: 2.4rem; margin-bottom: 10px; }
+  p { color: #aaa; margin-bottom: 30px; }
   input {
     width: 100%;
     padding: 18px;
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     text-align: center;
     background: #1a1a1a;
-    border: 1px solid #444;
+    border: 2px solid #555;
     border-radius: 12px;
     color: white;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
   }
   button {
     width: 100%;
-    padding: 16px;
+    padding: 18px;
     background: white;
     color: black;
     border: none;
     border-radius: 12px;
     font-size: 1.2rem;
     font-weight: bold;
-    cursor: pointer;
   }
-  #error { color: #ff6666; margin-top: 15px; }
 </style>
 </head>
 <body>
 
-<div class="login-box">
+<div class="box">
   <h1>Despesas Mensais</h1>
   <p>Introduz o PIN para continuar</p>
-  
-  <input type="password" id="pinInput" placeholder="••••" maxlength="4" autofocus>
-  
-  <button onclick="verifyPIN()">Entrar</button>
-  <div id="error"></div>
+  <input type="password" id="pin" placeholder="PIN" maxlength="4" autofocus>
+  <button onclick="entrar()">Entrar</button>
 </div>
 
 <script>
-function verifyPIN() {
-  const pin = document.getElementById('pinInput').value.trim();
-  if (pin === '1007') {
-    alert('✅ Bem-vindo! Login efetuado com sucesso.');
-    document.body.innerHTML = `
-      <div style="text-align:center; margin-top:150px; color:white;">
-        <h1>Despesas Mensais</h1>
-        <p style="color:#0f0;">Aplicação carregada com sucesso!</p>
-        <p>Em breve vou adicionar o calendário completo aqui.</p>
-      </div>`;
+function entrar() {
+  if (document.getElementById('pin').value === '1007') {
+    alert('✅ Login feito com sucesso!');
+    document.body.innerHTML = '<h1 style="color:white;text-align:center;margin-top:200px;">Bem-vindo à aplicação!</h1>';
   } else {
-    document.getElementById('error').textContent = 'PIN incorreto. Usa 1007';
+    alert('PIN errado. Usa 1007');
   }
 }
-
-// Permite pressionar Enter
-document.getElementById('pinInput').addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') verifyPIN();
+document.getElementById('pin').addEventListener('keypress', e => {
+  if (e.key === 'Enter') entrar();
 });
 </script>
 </body>
