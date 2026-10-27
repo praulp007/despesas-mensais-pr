@@ -299,6 +299,120 @@
   }
   .right-col { display: flex; flex-direction: column; gap: 20px; }
 
+  /* Cabeçalho com botão de exportação */
+  .header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .btn-ghost {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: Arial, Helvetica, sans-serif;
+    transition: background 0.15s;
+  }
+  .btn-ghost:hover { background: #2e2e2e; }
+
+  /* Checkbox de despesa fixa */
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+    color: #cccccc;
+    cursor: pointer;
+    user-select: none;
+  }
+  .check-row input { width: 18px; height: 18px; accent-color: #ffffff; cursor: pointer; }
+  .check-hint { font-size: 0.72rem; color: var(--muted); margin: -6px 0 12px 28px; }
+
+  /* Etiqueta "fixa" */
+  .fixa-tag {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #aaaaaa;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  /* Top 5 */
+  .section-sub {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 22px 0 10px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+  .top-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 6px;
+  }
+  .top-rank {
+    width: 18px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .top-info { flex: 1; min-width: 0; }
+  .top-desc {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #f0f0f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .top-meta { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+  .top-val { font-size: 0.8rem; font-weight: 700; color: #ffffff; flex-shrink: 0; }
+
+  /* Despesas fixas */
+  .fixas-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .fixas-total strong { color: #ffffff; font-size: 1rem; }
+  .setup-hint {
+    font-size: 0.75rem;
+    color: #ffb366;
+    line-height: 1.4;
+    padding: 10px;
+    border: 1px dashed #66492b;
+    border-radius: 6px;
+  }
+
   #loginScreen {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -367,8 +481,13 @@
 </div>
 
 <div style="max-width:1200px;margin:0 auto 24px;display:none;" id="mainApp">
-  <h1>Despesas Mensais</h1>
-  <p class="subtitle">Regista, organiza e analisa os teus gastos</p>
+  <div class="header-row">
+    <div>
+      <h1>Despesas Mensais</h1>
+      <p class="subtitle">Regista, organiza e analisa os teus gastos</p>
+    </div>
+    <button class="btn-ghost" id="btnExport" title="Descarregar cópia de segurança de todas as despesas">⬇ Exportar CSV</button>
+  </div>
 </div>
 
 <div class="layout" id="mainContent" style="display:none;">
@@ -407,6 +526,11 @@
         <label>Descrição</label>
         <input type="text" id="inputDesc" placeholder="Ex: Supermercado, Netflix, Gasolina...">
       </div>
+      <label class="check-row" for="inputFixa">
+        <input type="checkbox" id="inputFixa">
+        🔁 Repetir todos os meses (despesa fixa)
+      </label>
+      <p class="check-hint" id="fixaHint">Ex: renda, ginásio, Netflix. Conta automaticamente neste dia em todos os meses a partir deste.</p>
       <button class="btn-add" id="btnAdd">+ Adicionar Despesa</button>
     </div>
     <div class="card" id="dayListCard" style="display:none;">
@@ -426,6 +550,14 @@
         <div class="legend" id="legend"></div>
       </div>
       <div class="no-data" id="noData">Sem despesas este mês</div>
+      <div id="topSection" style="display:none;">
+        <div class="section-sub">Top 5 despesas do mês</div>
+        <div id="topList"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔁 Despesas Fixas Mensais</div>
+      <div id="fixasList"></div>
     </div>
   </div>
 </div>
@@ -438,6 +570,8 @@ const APP_PIN = '1007';
 let supabaseClient;
 let currentUser = null;
 let data = {}; // local cache
+let fixas = []; // despesas fixas mensais (tabela despesas_fixas)
+let fixasDisponivel = true; // false se a tabela ainda não existir no Supabase
 
 const CATEGORIES = {
   alimentacao: { label: '🍔 Alimentação', color: '#ff9f43' },
@@ -482,7 +616,7 @@ async function verifyPIN() {
     currentUser = { id: 'user_1007' }; // fixed user id for this single-user app
 
     try {
-      await loadExpenses();
+      await Promise.all([loadExpenses(), loadFixas()]);
     } catch (err) {
       console.error('Erro ao carregar despesas:', err);
     }
@@ -491,8 +625,7 @@ async function verifyPIN() {
     document.getElementById('mainApp').style.display = 'block';
     document.getElementById('mainContent').style.display = 'grid';
 
-    renderCalendar();
-    renderChart();
+    renderAll();
   } else {
     errorEl.textContent = 'PIN incorreto. Tenta novamente.';
     pinDigits.forEach(i => { i.value = ''; i.classList.add('shake'); });
@@ -547,11 +680,101 @@ async function loadExpenses() {
     if (!data[key]) data[key] = [];
     data[key].push({
       id: exp.id,
-      amount: exp.amount,
+      date: key,
+      amount: Number(exp.amount),
       category: exp.category,
       desc: exp.description
     });
   });
+}
+
+// ---------- Despesas fixas mensais ----------
+// Cada linha da tabela despesas_fixas é uma "regra": conta `amount` no dia `dia`
+// de todos os meses entre `inicio` e `fim` (ambos guardados como 1.º dia do mês;
+// fim = null significa que ainda está ativa). Não cria linhas na tabela despesas,
+// por isso o histórico nunca fica duplicado.
+async function loadFixas() {
+  if (!supabaseClient) return;
+  const { data: rows, error } = await supabaseClient
+    .from('despesas_fixas')
+    .select('*')
+    .order('dia', { ascending: true });
+  if (error) {
+    console.warn('Tabela despesas_fixas indisponível:', error.message);
+    fixasDisponivel = false;
+    fixas = [];
+    return;
+  }
+  fixasDisponivel = true;
+  fixas = (rows || []).map(f => ({ ...f, amount: Number(f.amount), dia: Number(f.dia) }));
+}
+
+async function saveFixa(f) {
+  const { error } = await supabaseClient.from('despesas_fixas').insert(f);
+  if (error) return { ok: false, message: error.message || JSON.stringify(error) };
+  return { ok: true };
+}
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+function monthStartKey(y, m0) { return `${y}-${pad2(m0 + 1)}-01`; }
+
+function fixaActiveIn(f, y, m0) {
+  const ms = monthStartKey(y, m0);
+  return f.inicio <= ms && (!f.fim || f.fim >= ms);
+}
+
+// Deixa de contar a despesa fixa a partir do mês que está a ser visto.
+// Se começou neste mês (ou depois), apaga-a de vez.
+async function endFixa(f) {
+  const y = currentDate.getFullYear();
+  const m0 = currentDate.getMonth();
+  const vStart = monthStartKey(y, m0);
+  let error;
+  if (f.inicio >= vStart) {
+    ({ error } = await supabaseClient.from('despesas_fixas').delete().eq('id', f.id));
+  } else {
+    const prev = new Date(y, m0 - 1, 1);
+    const fim = monthStartKey(prev.getFullYear(), prev.getMonth());
+    ({ error } = await supabaseClient.from('despesas_fixas').update({ fim }).eq('id', f.id));
+  }
+  if (error) {
+    alert('Erro ao remover despesa fixa: ' + error.message);
+    return false;
+  }
+  await loadFixas();
+  return true;
+}
+
+function fixedForDate(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  return fixas
+    .filter(f => fixaActiveIn(f, y, m - 1) && Math.min(f.dia, daysInMonth) === d)
+    .map(f => ({
+      id: 'fixa-' + f.id,
+      fixaId: f.id,
+      fixa: true,
+      date: key,
+      amount: f.amount,
+      category: f.category,
+      desc: f.description
+    }));
+}
+
+// Despesas normais + fixas de um dia
+function getDayExpenses(key) {
+  return [...(data[key] || []), ...fixedForDate(key)];
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderAll() {
+  renderCalendar();
+  renderDayList();
+  renderChart();
+  renderFixas();
 }
 
 async function saveExpense(expense) {
@@ -593,10 +816,12 @@ function fmt(n) {
 
 function getMonthExpenses(year, month) {
   const result = {};
-  Object.keys(data).forEach(k => {
-    const [y, m] = k.split('-').map(Number);
-    if (y === year && m === month + 1) result[k] = data[k];
-  });
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const k = `${year}-${pad2(month + 1)}-${pad2(d)}`;
+    const list = getDayExpenses(k);
+    if (list.length) result[k] = list;
+  }
   return result;
 }
 
@@ -633,11 +858,12 @@ function renderCalendar() {
     numEl.className = 'day-num';
     numEl.textContent = d;
     el.appendChild(numEl);
-    if (data[key] && data[key].length > 0) {
+    const dayExpenses = getDayExpenses(key);
+    if (dayExpenses.length > 0) {
       const dot = document.createElement('div');
       dot.className = 'day-dot';
       el.appendChild(dot);
-      const total = data[key].reduce((s, e) => s + e.amount, 0);
+      const total = dayExpenses.reduce((s, e) => s + e.amount, 0);
       const totalEl = document.createElement('div');
       totalEl.className = 'day-total';
       totalEl.textContent = fmt(total);
@@ -659,7 +885,7 @@ function renderDayList() {
   const title = document.getElementById('dayListTitle');
   if (!selectedDate) { card.style.display = 'none'; return; }
   const key = keyFor(selectedDate);
-  const expenses = data[key] || [];
+  const expenses = getDayExpenses(key);
   const d = selectedDate.getDate();
   const m = selectedDate.getMonth();
   title.textContent = `${d} de ${MONTHS_PT[m]}`;
@@ -676,26 +902,29 @@ function renderDayList() {
     item.innerHTML = `
       <div class="cat-dot" style="background:${cat.color}"></div>
       <div class="expense-info">
-        <div class="expense-desc">${e.desc || cat.label.replace(/^\S+\s/, '')}</div>
+        <div class="expense-desc">${esc(e.desc || cat.label.replace(/^\S+\s/, ''))}${e.fixa ? '<span class="fixa-tag">🔁 fixa</span>' : ''}</div>
         <div class="expense-cat">${cat.label}</div>
       </div>
       <div class="expense-amount">${fmt(e.amount)}</div>
-      <button class="btn-del" data-id="${e.id}" title="Remover">✕</button>
+      <button class="btn-del" title="Remover">✕</button>
     `;
-    list.appendChild(item);
-  });
-  list.querySelectorAll('.btn-del').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    item.querySelector('.btn-del').addEventListener('click', async () => {
+      if (e.fixa) {
+        const f = fixas.find(x => x.id === e.fixaId);
+        if (f && confirm(`"${f.description}" é uma despesa fixa.\nDeixar de a contar a partir de ${MONTHS_PT[currentDate.getMonth()]}? (os meses anteriores ficam como estão)`)) {
+          if (await endFixa(f)) renderAll();
+        }
+        return;
+      }
       if (confirm('Eliminar esta despesa?')) {
-        const success = await deleteExpense(btn.dataset.id);
+        const success = await deleteExpense(e.id);
         if (success) {
           await loadExpenses();
-          renderCalendar();
-          renderDayList();
-          renderChart();
+          renderAll();
         }
       }
     });
+    list.appendChild(item);
   });
 }
 
@@ -705,11 +934,13 @@ function renderChart() {
   const monthData = getMonthExpenses(y, m);
   const totals = {};
   let grandTotal = 0;
-  Object.values(monthData).flat().forEach(e => {
+  const allMonth = Object.values(monthData).flat();
+  allMonth.forEach(e => {
     totals[e.category] = (totals[e.category] || 0) + e.amount;
     grandTotal += e.amount;
   });
   document.getElementById('monthTotalVal').textContent = fmt(grandTotal);
+  renderTop5(allMonth);
   const canvas = document.getElementById('pieCanvas');
   const noData = document.getElementById('noData');
   const legend = document.getElementById('legend');
@@ -759,22 +990,98 @@ function renderChart() {
   });
 }
 
+function renderTop5(expenses) {
+  const section = document.getElementById('topSection');
+  const list = document.getElementById('topList');
+  const top = [...expenses].sort((a, b) => b.amount - a.amount).slice(0, 5);
+  if (top.length === 0) { section.style.display = 'none'; list.innerHTML = ''; return; }
+  section.style.display = 'block';
+  list.innerHTML = top.map((e, i) => {
+    const cat = CATEGORIES[e.category] || CATEGORIES.outro;
+    const [, mm, dd] = e.date.split('-').map(Number);
+    const desc = e.desc || cat.label.replace(/^\S+\s/, '');
+    return `
+      <div class="top-item">
+        <div class="top-rank">${i + 1}</div>
+        <div class="top-info">
+          <div class="top-desc">${esc(desc)}${e.fixa ? '<span class="fixa-tag">🔁 fixa</span>' : ''}</div>
+          <div class="top-meta">${cat.label} · ${dd} ${MONTHS_PT[mm - 1].slice(0, 3).toLowerCase()}</div>
+        </div>
+        <div class="top-val">${fmt(e.amount)}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderFixas() {
+  const box = document.getElementById('fixasList');
+  if (!fixasDisponivel) {
+    box.innerHTML = `<div class="setup-hint">Para ativar as despesas fixas, cria a tabela <b>despesas_fixas</b> no Supabase (SQL Editor) e recarrega a página.</div>`;
+    return;
+  }
+  const y = currentDate.getFullYear();
+  const m0 = currentDate.getMonth();
+  const active = fixas.filter(f => fixaActiveIn(f, y, m0));
+  if (active.length === 0) {
+    box.innerHTML = `<div class="empty-list">Sem despesas fixas em ${MONTHS_PT[m0]}.<br>Marca "Repetir todos os meses" ao adicionar uma despesa.</div>`;
+    return;
+  }
+  const total = active.reduce((s, f) => s + f.amount, 0);
+  box.innerHTML = `<div class="fixas-total"><span>${active.length} fixa${active.length > 1 ? 's' : ''} em ${MONTHS_PT[m0]}</span><strong>${fmt(total)}/mês</strong></div>`;
+  active.forEach(f => {
+    const cat = CATEGORIES[f.category] || CATEGORIES.outro;
+    const item = document.createElement('div');
+    item.className = 'expense-item';
+    item.innerHTML = `
+      <div class="cat-dot" style="background:${cat.color}"></div>
+      <div class="expense-info">
+        <div class="expense-desc">${esc(f.description)}</div>
+        <div class="expense-cat">${cat.label} · dia ${f.dia}</div>
+      </div>
+      <div class="expense-amount">${fmt(f.amount)}</div>
+      <button class="btn-del" title="Deixar de contar a partir deste mês">✕</button>
+    `;
+    item.querySelector('.btn-del').addEventListener('click', async () => {
+      if (confirm(`Deixar de contar "${f.description}" a partir de ${MONTHS_PT[m0]}?\n(os meses anteriores ficam como estão)`)) {
+        if (await endFixa(f)) renderAll();
+      }
+    });
+    box.appendChild(item);
+  });
+}
+
+// Cópia de segurança: descarrega tudo num CSV que abre no Excel
+function exportCSV() {
+  const rows = [['tipo', 'data', 'valor', 'categoria', 'descricao', 'dia_fixo', 'inicio', 'fim']];
+  Object.keys(data).sort().forEach(k => {
+    data[k].forEach(e => rows.push(['despesa', k, e.amount.toFixed(2).replace('.', ','), e.category, e.desc || '', '', '', '']));
+  });
+  fixas.forEach(f => rows.push(['fixa', '', f.amount.toFixed(2).replace('.', ','), f.category, f.description || '', f.dia, f.inicio, f.fim || '']));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `despesas-backup-${keyFor(new Date())}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+document.getElementById('btnExport').addEventListener('click', exportCSV);
+
 document.getElementById('prevMonth').addEventListener('click', () => {
+  currentDate.setDate(1);
   currentDate.setMonth(currentDate.getMonth() - 1);
   selectedDate = null;
   document.getElementById('selectedDateLabel').textContent = 'Seleciona um dia no calendário';
-  renderCalendar();
-  renderDayList();
-  renderChart();
+  renderAll();
 });
 
 document.getElementById('nextMonth').addEventListener('click', () => {
+  currentDate.setDate(1);
   currentDate.setMonth(currentDate.getMonth() + 1);
   selectedDate = null;
   document.getElementById('selectedDateLabel').textContent = 'Seleciona um dia no calendário';
-  renderCalendar();
-  renderDayList();
-  renderChart();
+  renderAll();
 });
 
 document.getElementById('btnAdd').addEventListener('click', async () => {
@@ -790,24 +1097,39 @@ document.getElementById('btnAdd').addEventListener('click', async () => {
   const category = document.getElementById('inputCategory').value;
   const desc = document.getElementById('inputDesc').value.trim();
   const key = keyFor(selectedDate);
+  const isFixa = document.getElementById('inputFixa').checked;
+  const btn = document.getElementById('btnAdd');
+  btn.disabled = true;
 
-  const expense = {
-    date: key,
-    amount,
-    category,
-    desc
-  };
+  let result;
+  if (isFixa) {
+    if (!desc) {
+      alert('Dá um nome à despesa fixa (ex: Renda, Ginásio).');
+      btn.disabled = false;
+      return;
+    }
+    result = await saveFixa({
+      description: desc,
+      amount,
+      category,
+      dia: selectedDate.getDate(),
+      inicio: monthStartKey(selectedDate.getFullYear(), selectedDate.getMonth())
+    });
+    if (result.ok) await loadFixas();
+  } else {
+    result = await saveExpense({ date: key, amount, category, desc });
+    if (result.ok) await loadExpenses();
+  }
+  btn.disabled = false;
 
-  const result = await saveExpense(expense);
   if (result.ok) {
-    await loadExpenses();
     document.getElementById('inputAmount').value = '';
     document.getElementById('inputDesc').value = '';
-    renderCalendar();
-    renderDayList();
-    renderChart();
+    document.getElementById('inputFixa').checked = false;
+    renderAll();
   } else {
-    alert('Erro ao guardar despesa: ' + result.message);
+    alert('Erro ao guardar despesa: ' + result.message +
+      (isFixa ? '\n\n(Confirma que criaste a tabela despesas_fixas no Supabase.)' : ''));
   }
 });
 </script>
